@@ -209,7 +209,7 @@ func serveProxy(w http.ResponseWriter, r *http.Request) {
 				ReqBody:    normalizeBody(reqBody, r.Header.Get("Content-Type")),
 				RespBody:   normalizeBody(rec.body, rec.Header().Get("Content-Type")),
 				StatusCode: rec.status,
-				CreatedAt:  time.Now(),
+				CreatedAt:  time.Now().UTC(),
 			}
 
 			select {
