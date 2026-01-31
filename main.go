@@ -145,6 +145,12 @@ func (r *Route) Pick() *Backend {
 
 func serveProxy(w http.ResponseWriter, r *http.Request) {
 
+	if r.URL.Path == "/" {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("ok"))
+		return
+	}
+		
 	mu.RLock()
 	defer mu.RUnlock()
 
@@ -277,6 +283,11 @@ func listRoutesHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(result)
 }
 
+func healthHandler(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("ok"))
+}
+
 /* ================= MAIN ================= */
 
 func main() {
@@ -308,18 +319,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// go func() {
-	// 	for {
-	// 		loadRoutes()
-	// 		time.Sleep(30 * time.Second)
-	// 	}
-	// }()
-
 	go healthLoop()
 
 	startLogWorker()
 	startRetentionWorker()
 
+	http.HandleFunc("/health", healthHandler)
 	http.HandleFunc("/logs", logsHandler)
 	http.HandleFunc("/routes", listRoutesHandler)
 	http.HandleFunc("/reload", reloadHandler)
