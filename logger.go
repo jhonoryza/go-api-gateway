@@ -154,21 +154,27 @@ func decompressIfNeeded(body []byte, encoding string) []byte {
 }
 
 func normalizeReqBody(body []byte, contentType string) string {
-	return limitString(
-        bodyToString(
-            body,
-            contentType,
-        ),
-    )
+	return maskBody(
+		limitString(
+	        bodyToString(
+	            body,
+	            contentType,
+	        ),
+	    ),
+		contentType,
+	)
 }
 
 func normalizeRespBody(body []byte, contentType string, contentEncoding string) string {
-	return limitString(
-        bodyToString(
-            decompressIfNeeded(body, contentEncoding),
-            contentType,
-        ),
-    )
+	return maskBody(
+		limitString(
+	        bodyToString(
+	            decompressIfNeeded(body, contentEncoding),
+	            contentType,
+	        ),
+	    ),
+		contentType,
+	)
 }
 
 func startLogWorker() {
