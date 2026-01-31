@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"compress/gzip"
+	"compress/zlib"
 	"io"
 	"log"
 	"mime"
@@ -16,6 +17,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+
+	"github.com/andybalholm/brotli"
 )
 
 type responseRecorder struct {
@@ -136,8 +139,41 @@ func gunzipIfNeeded(body []byte) []byte {
     return out
 }
 
+func decompressIfNeeded(body []byte, encoding string) []byte {
+    var reader io.ReadCloser
+    var err error
+
+    switch strings.ToLower(encoding) {
+    case "gzip":
+        reader, err = gzip.NewReader(bytes.NewReader(body))
+    case "br":
+        reader = io.NopCloser(brotli.NewReader(bytes.NewReader(body)))
+    case "deflate":
+        reader, err = zlib.NewReader(bytes.NewReader(body))
+    default:
+        return body
+    }
+
+    if err != nil {
+        return body
+    }
+    defer reader.Close()
+
+    out, err := io.ReadAll(reader)
+    if err != nil {
+        return body
+    }
+
+    return out
+}
+
 func normalizeBody(body []byte, contentType string) string {
-	return limitString(bodyToString(gunzipIfNeeded(body), contentType))
+	return limitString(
+        bodyToString(
+            decompressIfNeeded(body, contentType),
+            contentType,
+        ),
+    )
 }
 
 
