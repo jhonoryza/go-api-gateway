@@ -47,6 +47,7 @@ Konfigurasi disimpan di PostgreSQL dan dicache di memory.
 gateway/
  ├─ go.mod
  ├─ main.go
+ ├─ log-worker.go
  └─ README.md
 ```
 
@@ -71,30 +72,8 @@ psql --version
 
 Jalankan SQL berikut di PostgreSQL:
 
-```sql
-CREATE TABLE gateway_routes (
-    id SERIAL PRIMARY KEY,
-    path TEXT UNIQUE NOT NULL
-);
-
-CREATE TABLE gateway_backends (
-    id SERIAL PRIMARY KEY,
-    route_id INT REFERENCES routes(id) ON DELETE CASCADE,
-    target_url TEXT NOT NULL,
-    is_active BOOLEAN DEFAULT true
-);
-```
-
-## Contoh Data
-
-```sql
-INSERT INTO gateway_routes(path) VALUES('/blog');
-
-INSERT INTO gateway_backends(route_id, target_url)
-VALUES
-(1, 'https://api-a.example.com'),
-(1, 'https://api-b.example.com');
-```
+- init.sql
+- logger.sql
 
 ---
 
@@ -135,7 +114,7 @@ go mod tidy
 # ▶️ Menjalankan Aplikasi (Development)
 
 ```bash
-go run main.go
+go run .
 ```
 
 Output:
@@ -149,13 +128,13 @@ Gateway running on :8080
 # 🏗️ Build Binary
 
 ```bash
-go build -o gateway
+go build -o build/gateway
 ```
 
 Jalankan:
 
 ```bash
-./gateway
+./build/gateway
 ```
 
 ---
@@ -206,35 +185,9 @@ Routes reloaded
 
 ---
 
-# 📊 Lihat Semua Routes & Backend
+# 📊 API DOC
 
-```
-GET /routes
-```
-
-Response contoh:
-
-```json
-[
-  {
-    "path": "/users",
-    "backends": [
-      {
-        "id": 1,
-        "url": "https://api-a.example.com",
-        "alive": true
-      },
-      {
-        "id": 2,
-        "url": "https://api-b.example.com",
-        "alive": false
-      }
-    ]
-  }
-]
-```
-
-Disarankan juga diberi header admin token.
+cek file `openapi.json`
 
 ---
 
@@ -273,54 +226,18 @@ Jika semua backend mati →
 
 ---
 
-# 🔒 Keamanan Minimum
-
-Disarankan:
-
-* Gunakan ADMIN_TOKEN
-* Letakkan gateway di private network
-* Tambahkan firewall
-
----
-
-# 🚀 Deployment ke Render
-
-1. Push project ke GitHub
-2. Render → New Web Service
-3. Environment: Go
-4. Build Command:
-
-```bash
-go build -o app
-```
-
-5. Start Command:
-
-```bash
-./app
-```
-
-6. Tambahkan Environment Variables di dashboard Render
-
----
-
 # ⚠️ Limitasi
 
 * Konfigurasi hanya di memory
 * Jika service restart → reload dari DB
-* Belum ada auth per-route
 * Belum ada rate limiting
 
 ---
 
-# 🛣️ Roadmap (Optional Enhancement)
+# 🛣️ Roadmap
 
 * Weighted round robin
-* Admin CRUD API
-* JWT auth per route
 * Rate limit
-* Metrics Prometheus
-* Circuit breaker
 
 ---
 
@@ -335,7 +252,13 @@ curl -H "X-ADMIN-TOKEN: secret123" http://localhost:8080/reload
 Lihat status backend:
 
 ```bash
-curl http://localhost:8080/routes
+curl -H "X-ADMIN-TOKEN: secret123" http://localhost:8080/routes
+```
+
+Lihat request log backend:
+
+```bash
+curl -H "X-ADMIN-TOKEN: secret123" http://localhost:8080/logs
 ```
 
 ---
