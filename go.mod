@@ -3,6 +3,7 @@ module gateway
 go 1.25.5
 
 require (
+	github.com/andybalholm/brotli v1.2.0
 	github.com/jackc/pgx/v5 v5.8.0
 	github.com/joho/godotenv v1.5.1
 )
