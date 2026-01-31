@@ -1,0 +1,9 @@
+services:
+  apigateway:
+    image: "jhonoryza/golang-api-gateway:latest"
+    container_name: "golang-api-gateway"
+    restart: unless-stopped
+    ports:
+      - 8001:8080
+    env_file:
+      - ./.env

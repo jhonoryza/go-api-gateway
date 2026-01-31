@@ -39,6 +39,17 @@ var (
 	mu     sync.RWMutex
 )
 
+type BackendView struct {
+	ID    int    `json:"id"`
+	URL   string `json:"url"`
+	Alive bool   `json:"alive"`
+}
+
+type RouteView struct {
+	Path     string        `json:"path"`
+	Backends []BackendView `json:"backends"`
+}
+
 /* ================= DB LOAD ================= */
 
 func loadRoutes() error {
@@ -226,17 +237,6 @@ func reloadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write([]byte("Routes reloaded"))
-}
-
-type BackendView struct {
-	ID    int    `json:"id"`
-	URL   string `json:"url"`
-	Alive bool   `json:"alive"`
-}
-
-type RouteView struct {
-	Path     string        `json:"path"`
-	Backends []BackendView `json:"backends"`
 }
 
 func listRoutesHandler(w http.ResponseWriter, r *http.Request) {
