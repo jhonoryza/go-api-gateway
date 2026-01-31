@@ -281,9 +281,8 @@ func listRoutesHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	var err error
-	err = godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
+	if err := godotenv.Load(); err != nil {
+	    log.Println("No .env file found, using system environment variables")
 	}
 
 	dsn := os.Getenv("DATABASE_URL")
@@ -317,7 +316,7 @@ func main() {
 	// }()
 
 	go healthLoop()
-	
+
 	startLogWorker()
 	startRetentionWorker()
 
