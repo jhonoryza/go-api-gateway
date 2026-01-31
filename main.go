@@ -147,7 +147,7 @@ func serveProxy(w http.ResponseWriter, r *http.Request) {
 
 	if r.URL.Path == "/" {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("ok"))
+		w.Write([]byte("ok v1.1"))
 		return
 	}
 
