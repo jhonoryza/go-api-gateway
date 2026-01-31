@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"database/sql"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -15,8 +17,8 @@ import (
 
 	"encoding/json"
 
-	"github.com/joho/godotenv"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/joho/godotenv"
 )
 
 type Backend struct {
@@ -58,7 +60,9 @@ func loadRoutes() error {
 		var id int
 		var url string
 
-		rows.Scan(&path, &id, &url)
+		if err := rows.Scan(&path, &id, &url); err != nil {
+			return err
+		}
 
 		if temp[path] == nil {
 			temp[path] = &Route{Path: path}
@@ -91,6 +95,9 @@ func healthLoop() {
 						Timeout: 2 * time.Second,
 					}
 					resp, err := client.Get(backend.URL + "/health")
+					if err == nil {
+						resp.Body.Close()
+					}
 					if err == nil && resp.StatusCode == 200 {
 						backend.Alive.Store(true)
 					} else {
@@ -113,7 +120,7 @@ func (r *Route) Pick() *Backend {
 		return nil
 	}
 
-	for range n {
+	for i := 0; i < n; i++ {
 		idx := r.Counter.Add(1) % uint64(n)
 		b := r.Backends[idx]
 		if b.Alive.Load() {
@@ -130,6 +137,14 @@ func serveProxy(w http.ResponseWriter, r *http.Request) {
 	mu.RLock()
 	defer mu.RUnlock()
 
+	var reqBody []byte
+	if r.Body != nil {
+		var buf bytes.Buffer
+		tee := io.TeeReader(r.Body, &buf)
+		reqBody, _ = io.ReadAll(io.LimitReader(tee, 4096))
+		r.Body = io.NopCloser(&buf)
+	}
+
 	for path, route := range routes {
 		if strings.HasPrefix(r.URL.Path, path) {
 
@@ -141,9 +156,8 @@ func serveProxy(w http.ResponseWriter, r *http.Request) {
 
 			target, _ := url.Parse(backend.URL)
 			proxy := httputil.NewSingleHostReverseProxy(target)
-			proxy.Director = func(req *http.Request) {
 
-				// hapus prefix route
+			proxy.Director = func(req *http.Request) {
 				newPath := strings.TrimPrefix(req.URL.Path, path)
 				if newPath == "" {
 					newPath = "/"
@@ -155,11 +169,38 @@ func serveProxy(w http.ResponseWriter, r *http.Request) {
 				req.URL.RawQuery = r.URL.RawQuery
 
 				req.Host = target.Host
+				req.Header = r.Header.Clone()
 				req.Header.Set("User-Agent", "Go-Gateway/1.0")
 
 				log.Println("Forwarding to:", target.String()+newPath)
 			}
-			proxy.ServeHTTP(w, r)
+
+			// ===== Capture response =====
+			rec := &responseRecorder{
+				ResponseWriter: w,
+				status:         200,
+			}
+
+			proxy.ServeHTTP(rec, r)
+
+			// ===== Push log async =====
+			logItem := GatewayLog{
+				Method:     r.Method,
+				Path:       r.URL.Path,
+				Query:      r.URL.RawQuery,
+				URL:        backend.URL,
+				ReqBody:    normalizeBody(reqBody, r.Header.Get("Content-Type")),
+				RespBody:   normalizeBody(rec.body, rec.Header().Get("Content-Type")),
+				StatusCode: rec.status,
+				CreatedAt:  time.Now(),
+			}
+
+			select {
+			case logQueue <- logItem:
+			default:
+				log.Println("logQueue full, drop log")
+			}
+
 			return
 		}
 	}
@@ -202,6 +243,11 @@ func listRoutesHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", 405)
+		return
+	}
+
+	if r.Header.Get("X-ADMIN-TOKEN") != os.Getenv("ADMIN_TOKEN") {
+		http.Error(w, "Forbidden", 403)
 		return
 	}
 
@@ -271,7 +317,11 @@ func main() {
 	// }()
 
 	go healthLoop()
+	
+	startLogWorker()
+	startRetentionWorker()
 
+	http.HandleFunc("/logs", logsHandler)
 	http.HandleFunc("/routes", listRoutesHandler)
 	http.HandleFunc("/reload", reloadHandler)
 	http.HandleFunc("/", serveProxy)
