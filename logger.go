@@ -207,7 +207,7 @@ func startRetentionWorker() {
 		for {
 			_, err := db.Exec(`
 				DELETE FROM gateway_logs
-				WHERE created_at < NOW() - INTERVAL '7 day'
+				WHERE created_at < NOW() - INTERVAL '1 day'
 			`)
 			if err != nil {
 				log.Println("retention error:", err)
