@@ -150,7 +150,7 @@ func serveProxy(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("ok"))
 		return
 	}
-		
+
 	mu.RLock()
 	defer mu.RUnlock()
 
@@ -206,8 +206,12 @@ func serveProxy(w http.ResponseWriter, r *http.Request) {
 				Path:       r.URL.Path,
 				Query:      r.URL.RawQuery,
 				URL:        backend.URL,
-				ReqBody:    normalizeBody(reqBody, r.Header.Get("Content-Type")),
-				RespBody:   normalizeBody(rec.body, rec.Header().Get("Content-Type")),
+				ReqBody:    normalizeReqBody(reqBody, r.Header.Get("Content-Type")),
+				RespBody:   normalizeRespBody(
+					rec.body,
+					rec.Header().Get("Content-Type"),
+					rec.Header().Get("Content-Encoding"),
+				),
 				StatusCode: rec.status,
 				CreatedAt:  time.Now().UTC(),
 			}

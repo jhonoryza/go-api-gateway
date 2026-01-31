@@ -125,20 +125,6 @@ func bodyToString(b []byte, contentType string) string {
 	return base64.StdEncoding.EncodeToString(b)
 }
 
-func gunzipIfNeeded(body []byte) []byte {
-    r, err := gzip.NewReader(bytes.NewReader(body))
-    if err != nil {
-        return body
-    }
-    defer r.Close()
-
-    out, err := io.ReadAll(r)
-    if err != nil {
-        return body
-    }
-    return out
-}
-
 func decompressIfNeeded(body []byte, encoding string) []byte {
     var reader io.ReadCloser
     var err error
@@ -167,15 +153,23 @@ func decompressIfNeeded(body []byte, encoding string) []byte {
     return out
 }
 
-func normalizeBody(body []byte, contentType string) string {
+func normalizeReqBody(body []byte, contentType string) string {
 	return limitString(
         bodyToString(
-            decompressIfNeeded(body, contentType),
+            body,
             contentType,
         ),
     )
 }
 
+func normalizeRespBody(body []byte, contentType string, contentEncoding string) string {
+	return limitString(
+        bodyToString(
+            decompressIfNeeded(body, contentEncoding),
+            contentType,
+        ),
+    )
+}
 
 func startLogWorker() {
 	go func() {
