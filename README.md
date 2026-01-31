@@ -234,14 +234,14 @@ Jika semua backend mati →
 
 ---
 
-# 🛣️ Roadmap
-
-* Weighted round robin
-* Rate limit
-
----
-
 # 🧪 Tips Development
+
+Health check:
+
+```bash
+curl http://localhost:8080/health
+curl http://localhost:8080
+```
 
 Reload config setelah edit database:
 
@@ -249,13 +249,13 @@ Reload config setelah edit database:
 curl -H "X-ADMIN-TOKEN: secret123" http://localhost:8080/reload
 ```
 
-Lihat status backend:
+Lihat status setiap routes:
 
 ```bash
 curl -H "X-ADMIN-TOKEN: secret123" http://localhost:8080/routes
 ```
 
-Lihat request log backend:
+Lihat request log:
 
 ```bash
 curl -H "X-ADMIN-TOKEN: secret123" http://localhost:8080/logs
