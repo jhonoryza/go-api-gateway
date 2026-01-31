@@ -47,7 +47,7 @@ Konfigurasi disimpan di PostgreSQL dan dicache di memory.
 gateway/
  ├─ go.mod
  ├─ main.go
- ├─ log-worker.go
+ ├─ logger.go
  └─ README.md
 ```
 

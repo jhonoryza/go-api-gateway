@@ -1,7 +1,7 @@
 services:
   apigateway:
-    image: "jhonoryza/golang-api-gateway:latest"
-    container_name: "golang-api-gateway"
+    image: "jhonoryza/go-api-gateway:latest"
+    container_name: "go-api-gateway"
     restart: unless-stopped
     ports:
       - 8001:8080
