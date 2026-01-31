@@ -47,7 +47,7 @@ type GatewayLog struct {
 
 var logQueue = make(chan GatewayLog, 1000)
 
-const maxBodySize = 4096
+const maxBodySize = 16384
 
 func limitString(s string) string {
 	if len(s) > maxBodySize {

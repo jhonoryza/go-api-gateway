@@ -158,7 +158,7 @@ func serveProxy(w http.ResponseWriter, r *http.Request) {
 	if r.Body != nil {
 		var buf bytes.Buffer
 		tee := io.TeeReader(r.Body, &buf)
-		reqBody, _ = io.ReadAll(io.LimitReader(tee, 4096))
+		reqBody, _ = io.ReadAll(io.LimitReader(tee, maxBodySize))
 		r.Body = io.NopCloser(&buf)
 	}
 
