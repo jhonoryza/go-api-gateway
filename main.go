@@ -39,6 +39,8 @@ var (
 	mu     sync.RWMutex
 )
 
+const version = "v1.2"
+
 type BackendView struct {
 	ID    int    `json:"id"`
 	URL   string `json:"url"`
@@ -147,7 +149,7 @@ func serveProxy(w http.ResponseWriter, r *http.Request) {
 
 	if r.URL.Path == "/" {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("ok v1.1"))
+		w.Write([]byte(version))
 		return
 	}
 

@@ -285,6 +285,12 @@ func logsHandler(w http.ResponseWriter, r *http.Request) {
 		Response  string    `json:"response_body"`
 		CreatedAt time.Time `json:"created_at"`
 	}
+	
+	localTime, err := time.LoadLocation("Asia/Jakarta")
+	if err != nil {
+	    log.Println("Failed to load location:", err)
+	    localTime = time.UTC // fallback
+	}
 
 	var list []LogRow
 	var nextCursor string
@@ -302,6 +308,7 @@ func logsHandler(w http.ResponseWriter, r *http.Request) {
 			&l.Status,
 			&l.CreatedAt,
 		)
+		l.CreatedAt = l.CreatedAt.In(localTime)
 		list = append(list, l)
 
 		nextCursor = l.CreatedAt.Format(time.RFC3339Nano)
